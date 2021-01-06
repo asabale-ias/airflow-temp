@@ -1,0 +1,28 @@
+# Idea
+.idea/
+**/*.iml
+
+# Gradle files
+**/.gradle/
+**/build/
+
+## OSX files
+.DS_Store
+
+## Python files
+__init__.py
+*.pyc
+
+
+# Sublime
+*.sublime-workspace
+
+# Eclipse working folders
+/bin/
+/.project
+/.classpath
+/.pydevproject
+/.settings
+
+#
+**/*.bak

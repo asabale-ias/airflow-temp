@@ -1,0 +1,41 @@
+/**
+ * Utility functions
+ */
+
+def commit_info() {
+    shell_cmd_output(['git', 'log', '-n 1', '--format=%cd-%h', '--date=format:%Y%m%d'])
+}
+
+def branch_name() {
+    shell_cmd_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD'])
+}
+
+def shell_cmd_output(cmdLine) {
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        commandLine cmdLine
+        standardOutput = stdout
+    }
+    stdout.toString().trim()
+}
+
+def version_suffix() {
+    if ( project.hasProperty('release') == true ) {
+        def suffix = project.hasProperty('release') ? commit_info() : 'SNAPSHOT'
+    }
+    else {
+        branch_name() == 'master' ? commit_info() : 'SNAPSHOT'
+    }
+}
+
+def is_snapshot(version) {
+    version.endsWith('-SNAPSHOT')
+}
+
+ext {
+    commit_info = this.&commit_info
+    version_suffix = this.&version_suffix
+    is_snapshot = this.&is_snapshot
+    branch_name = this.&branch_name
+}
+

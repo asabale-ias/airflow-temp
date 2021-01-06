@@ -1,0 +1,5 @@
+rootProject.name = 'empty'
+include(
+    'config',
+    'pipeline'
+)

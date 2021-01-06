@@ -1,0 +1,84 @@
+apply from: 'helpers.gradle'
+
+subprojects {
+  apply plugin: 'distribution'
+  apply plugin: 'maven-publish'
+  apply plugin: 'java'
+
+  version = "${project.shortVersion}-${version_suffix()}"
+  group = project.hasProperty('group') ? project.group : 'test'
+
+distributions {
+    main {
+      
+      if (project.name == 'config') {
+        baseName = "${rootProject.name}-${project.name}"
+      } else {
+        baseName = "${rootProject.name}"
+      }
+      
+      contents {
+        from(".") {
+          into "/"
+          exclude 'build/', '.gradle/', '.git*', '.idea', '*.gradle', 'gradle.properties', '*.template', 'params-setup.sh', 'params-setup-lib.sh'
+          includeEmptyDirs = project.hasProperty('includeEmptyDirs') ? project.includeEmptyDirs : false
+
+        }
+      }
+    }
+  }
+
+  distTar {
+    compression = Compression.GZIP
+  }
+
+  publishing {
+    
+    publications {
+      mavenJava(MavenPublication) {
+
+        if (project.name == 'config') {
+          artifactId = "${rootProject.name}-${project.name}"
+        } else {
+          artifactId = "${rootProject.name}"
+        }
+        artifact distTar
+        artifact distZip
+      }
+    }
+    
+    repositories {
+      maven {
+        credentials {
+          username nexusUsername
+          password nexusPassword
+        }
+        url "${nexusUrl}/content/repositories/ds-${project.version.endsWith('-SNAPSHOT') ? 'snapshots' : 'releases'}"
+      }
+    }
+    
+  }
+
+  task initVersionFile(dependsOn: ['printVars']) {
+    doLast {
+      new File(project.projectDir, 'version.txt').withWriter { it << project.version }
+    }
+  }
+
+  task printVars {
+    doLast {
+      println("root: $rootProject.name")
+      println("name: $project.name")
+      println("shortv: $project.shortVersion")
+      println("ver: $project.version")
+      println("grp: $project.group")
+    }
+  }
+  
+  initVersionFile.mustRunAfter 'printVars'
+
+  distTar.dependsOn initVersionFile
+  distZip.dependsOn initVersionFile
+
+  defaultTasks 'clean', 'build'
+}

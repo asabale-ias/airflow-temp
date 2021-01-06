@@ -1,0 +1,7 @@
+apply from: '../helpers.gradle'
+
+ext {
+    commonVersion = '0.1'
+    shortVersion = project.hasProperty('shortVersion') ? project.shortVersion : commonVersion
+    group = project.hasProperty('group') ? project.group : 'test'
+}

@@ -1,0 +1,17 @@
+# Initial Jenkins NG file
+# See https://github.com/integralads/re-documentation/tree/master/jenkins-ng
+# This file is for initial onboarding.  It will always exit the build with
+# "success" because /bin/true is a Linux command that always successfully exits.
+
+language: shell
+script: /bin/true
+branches:
+  only:
+    - master
+## remove two lines in your Project
+    - dummy-dag
+    - dev
+##
+jenkins:
+  pipeline_jenkinsfile: .ci/cicd-wf-MARS_Jenkinsfile.groovy
+

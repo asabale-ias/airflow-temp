@@ -1,0 +1,131 @@
+// ######### [Parameters section] ########
+//
+// GitHub repository to checkout the Airflow DAG code from.
+// example: this.git_url = 'git@github.com:integralads/mars-airflow-dag-example.git'
+this.git_url = 'empty'
+
+// Default value for branch parameter in Jenkins UI
+// Usually you won't change it
+this.default_branch = 'origin/master'
+
+// Nexus artefact name = Airflow DAG name without -prod-v1.0/-stage-v5.0/-dev-v1.3 suffix.
+// example: this.application = 'ds-infra-dummy-dag'
+this.application = 'empty'
+
+// Group of Nexus artefacts with the Airflow DAG.
+// equal to group in usual Gradle scripts - under which group artifact will be stored on Nexus
+// example: this.nexus_group = 'com.integralads.ds-infra.dummy-dag'
+this.nexus_group = 'empty'
+
+// Group of Nexus artefacts with the configuration file of the Airflow DAG.
+// equal to group in usual Gradle scripts - under which group artifact will be stored on Nexus
+// example: this.nexus_group_config = 'com.integralads.ds-infra.dummy-dag'
+this.nexus_group_config = 'empty'
+
+// This tag is transformed to ${host_tag}.${environment} and it used as a Chef tag to ..
+// search target deployment hosts in Chef. Is equal to task_parameters->queue parameter without env postfix in Airflow DAG config.yaml
+// example: this.host_tag = 'pet'
+this.host_tag = 'empty'
+
+// Usually unchanged below, but if you need ...
+//
+// Base directory with the Gradle script, which builds the application(=Airflow DAG) artefact.
+// The base directory is in the GitHub repository.
+this.app_base_path = 'pipeline'
+
+// Base directory with the Gradle script, which builds the config(=configuration files for the Airflow DAG) artefact.
+// The base directory is in the GitHub repository.
+this.config_base_path = 'config'
+
+// List of environments, which are basically groups of target hosts to deploy to.
+// See details for the next variable.
+this.environment_choices = ['DEV', 'STAGING', 'QA', 'PROD'].join('\n')
+
+// Classifiers of Nexus artefacts.
+this.classifier_choices = ['snapshot', 'release'].join('\n')
+
+// Nexus instance address.
+this.nexus_url = 'http://nexus.mars.303net.pvt:8081/nexus'
+
+// The path on a local FS to extract the artefacts there.
+this.install_path = '/var/lib/airflow/dags'
+
+// Additional parameters for the Gradle command.
+// gradle <gradle_params_here> -DGIT_BRANCH=<branch_here> -P<classifier_here>
+this.gradle_params = 'publish'
+
+// Below this line are options for additional Assimilator DAG or any artefact that is needed.
+// Don't set if an additional Assimilator DAG or an auxiliary artifact in not used.
+// ==============================================================================================
+
+// Nexus artefact name or artefactId which the same.
+// Example: this.application = 'youtube'
+this.assimilator_application = 'empty'
+
+// GitHub repository with a code of Assimilator DAG or an artifact.
+// Example: this.git_url = 'git@github.com:integralads/ds-workflow.git'
+this.assimilator_git_url = 'empty'
+
+// Default value for a branch name for Assimilator DAG or artifact branch parameter in Jenkins UI
+// Usually you won't change it
+this.assimilator_default_branch = 'origin/master'
+
+// Base directory with the Gradle script, which builds an artefact with Assimilator DAG/artefact.
+// The base directory within the GitHub repository.
+this.assimilator_base_path = 'empty'
+
+// Nexus instance address.
+this.assimilator_nexus_url = 'http://nexus.mars.303net.pvt:8081/nexus'
+
+// Nexus group where artifacts are stored.
+// It equals to group in Gradle scripts - under which group artifact will be stored on Nexus
+// Example: this.nexus_group = 'com.integralads.generic-ml'
+this.assimilator_nexus_group = 'empty'
+
+// The path on a local FS to extract the artefacts there.
+// Example: this.assimilator_install_path = '/opt/assimilator'
+this.assimilator_install_path = 'empty'
+
+// Everything below this line MUST NOT BE CHANGED!
+// unless you are familiar with README.md and the Mars AppOps Support team agreed on your changes.
+// ==============================================================================================
+// Stages actually use variables from shared library so it's easy to update a bunch of jobs at once.
+// To be able to work with fields of this script it's object is passed to shared library variables.
+
+// This statement loads shared library directly from git repo and no configuration for Jenkins is needed
+library identifier: 'mars-shared-libs@master', retriever: modernSCM(
+    [$class       : 'GitSCMSource',
+     remote       : 'git@github.com:integralads/mars-jenkins-shared-libs.git',
+     credentialsId: 'read-only-clone-ssh-key'])
+
+buildAgent {
+  genericAriflowJobParameters(this)
+
+  stage('Checkout') {
+    checkout scm
+  }
+
+  stage('Build Airflow DAG and config') {
+    buildObj = genericAriflowBuildJob(this)
+  }
+
+  stage('Build the artifact') {
+    assimilatorBuildObj = genericAssimilatorBuildJob(this)
+  }
+
+  stage('Get versions of the artifacts') {
+    getVersionBuildObj(this)
+  }
+
+  stage('Deploy Airflow DAG and config') {
+    genericAriflowDeployJob(this)
+  }
+
+  stage('Deploy the artifact') {
+    genericAssimilatorDeployJob(this)
+   }
+
+  stage('Set Build Description') {
+    setBuildDescription(this)
+  }
+}
